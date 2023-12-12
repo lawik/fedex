@@ -1,7 +1,10 @@
 defmodule Fedex.Activitystreams.Plug do
   alias Plug.Conn
+
+  require Logger
   def init(options), do: options
 
+  @spec call(Plug.Conn.t(), any()) :: Plug.Conn.t()
   def call(%Conn{path_info: []} = conn, _opts) do
     conn
   end
@@ -10,7 +13,7 @@ defmodule Fedex.Activitystreams.Plug do
     prefix = Keyword.get(opts, :prefix, "/")
     key = Path.join([prefix | parts])
     fetch_thing = Keyword.fetch!(opts, :fetch)
-    IO.inspect(key, label: "key in plug")
+    Logger.info("Fetching actor by key: #{key}")
 
     case fetch_thing.(key) do
       nil ->
@@ -26,5 +29,5 @@ defmodule Fedex.Activitystreams.Plug do
     end
   end
 
-  def call(conn), do: conn
+  def call(conn, _opts), do: conn
 end

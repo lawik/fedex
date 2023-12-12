@@ -52,7 +52,7 @@ defmodule Fedex.Crypto do
     (request-target): #{http_verb} #{path}
     host: #{host}
     date: #{dt}
-    digest: #{digest}
+    digest: sha-256=#{digest}
     """
 
     [pem_entry] = :public_key.pem_decode(private_key_pem)
@@ -75,7 +75,8 @@ defmodule Fedex.Crypto do
       headers: %{
         host: host,
         date: dt,
-        signature: sig_header
+        signature: sig_header,
+        digest: "sha-256=" <> digest
       }
     }
   end

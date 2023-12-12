@@ -26,5 +26,5 @@ defmodule Fedex.Webfinger.Plug do
     end
   end
 
-  def call(conn), do: conn
+  def call(conn, _opts), do: conn
 end
