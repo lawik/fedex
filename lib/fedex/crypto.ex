@@ -53,8 +53,13 @@ defmodule Fedex.Crypto do
     """
 
     [pem_entry] = :public_key.pem_decode(private_key_pem)
-    private_key = :public_key.pem_entry_decode(pem_entry)
-    signed = :crypto.sign(:rsa, :sha256, to_sign, private_key)
+
+    {:RSAPrivateKey, _, modulus, _public_exponent, private_exponent, _, _, _exponent1, _, _,
+     _otherPrimeInfos} = private_key = :public_key.pem_entry_decode(pem_entry)
+
+    # IO.inspect(private_key, label: "private key")
+    # signed = :crypto.sign(:rsa, :sha256, to_sign, [private_exponent])
+    signed = :public_key.sign(to_sign, :sha256, private_key)
     signature = Base.encode64(signed)
 
     sig_header =
