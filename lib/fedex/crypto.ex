@@ -72,13 +72,14 @@ defmodule Fedex.Crypto do
       |> String.trim()
 
     %{
-      headers: %{
+      headers: [
         host: host,
         date: dt,
-        signature: sig_header,
-        digest: "sha-256=" <> digest
-      }
+        digest: "sha-256=" <> digest,
+        signature: sig_header
+      ]
     }
+    |> IO.inspect(label: "ordered headers")
   end
 
   defp generate_rsa_key_pair() do
