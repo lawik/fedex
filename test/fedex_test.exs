@@ -46,8 +46,8 @@ defmodule FedexTest do
     {:ok, _pid} = Doc.start_link(table_name)
 
     keypair = Fedex.Crypto.generate_keypair()
-    
-    Fedex.Crypto.sign_request(keypair.private.private_key, "myKeyId", :post, "/")
+
+    Fedex.Crypto.sign_request(keypair.private.private_key, "myKeyId", :post, host, port, "/")
     |> IO.inspect(label: "signature")
 
     actor =

@@ -34,11 +34,15 @@ defmodule Fedex.Crypto do
     KeyPair.new(length, PublicKey.new(length, pub), PrivateKey.new(length, priv))
   end
 
-  def sign_request(private_key_pem, key_id, http_verb, path) do
+  def sign_request(private_key_pem, key_id, http_verb, host, port, path) do
     key = :http_signature_key.decode_pem(private_key_pem)
-    #key = %{key | id: key_id}
+    key = %{key | id: key_id}
     signer = :http_signature_signer.new(key)
-    request = :http_signature.sign(signer, http_verb, path, %{})
+
+    :http_signature.sign(signer, http_verb, path, %{
+      "(request-target)" => "#{http_verb} #{path}",
+      "host" => "#{host}:#{port}"
+    })
   end
 
   defp generate_rsa_key_pair() do

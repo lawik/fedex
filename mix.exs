@@ -25,8 +25,8 @@ defmodule Fedex.MixProject do
       {:jason, "~> 1.4"},
       {:json_ld, "~> 0.3.7"},
       {:plug, "~> 1.0"},
-      #{:http_signature, "~> 2.0"},
-      {:http_signature, pat: "../erlang-http_signature"},
+      # {:http_signature, "~> 2.0"},
+      {:http_signature, path: "../erlang-http_signature"},
       {:bandit, "~> 1.1", only: :test}
     ]
   end
