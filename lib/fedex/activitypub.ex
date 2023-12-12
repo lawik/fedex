@@ -6,6 +6,9 @@ defmodule Fedex.Activitypub do
       Crypto.sign_request(keypair.private.private_key, actor.publicKey.id, verb, host, path)
 
     url = Path.join("https://#{host}", path)
-    Req.request(method: verb, url: url, headers: request.headers, body: Jason.encode!(body))
+    headers = Map.drop(request.headers, ["(request-target)"])
+
+    IO.inspect(headers, label: "headers")
+    Req.request(method: verb, url: url, headers: headers, body: Jason.encode!(body))
   end
 end

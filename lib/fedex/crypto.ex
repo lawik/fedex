@@ -35,14 +35,41 @@ defmodule Fedex.Crypto do
   end
 
   def sign_request(private_key_pem, key_id, http_verb, host, path) do
-    key = :http_signature_key.decode_pem(private_key_pem)
-    key = %{key | id: key_id}
-    signer = :http_signature_signer.new(key)
+    # key = :http_signature_key.decode_pem(private_key_pem)
+    # key = %{key | id: key_id}
+    # signer = :http_signature_signer.new(key)
 
-    :http_signature.sign(signer, http_verb, path, %{
-      "(request-target)" => "#{http_verb} #{path}",
-      "host" => "#{host}"
-    })
+    # :http_signature.sign(signer, http_verb, path, %{
+    #   "(request-target)" => "#{http_verb} #{path}",
+    #   "host" => "#{host}"
+    # })
+
+    dt = HTTPDate.format(DateTime.utc_now())
+
+    to_sign = """
+    (request-target): #{http_verb} #{path}
+    host: #{host}
+    date: #{dt}
+    """
+
+    [pem_entry] = :public_key.pem_decode(private_key_pem)
+    private_key = :public_key.pem_entry_decode(pem_entry)
+    signed = :crypto.sign(:rsa, :sha256, to_sign, private_key)
+    signature = Base.encode64(signed)
+
+    sig_header =
+      """
+      keyId="#{key_id}",headers="(request-target) host date",signature="#{signature}"'
+      """
+      |> String.trim()
+
+    %{
+      headers: %{
+        host: host,
+        date: dt,
+        signature: sig_header
+      }
+    }
   end
 
   defp generate_rsa_key_pair() do
