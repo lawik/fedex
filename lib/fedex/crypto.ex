@@ -34,7 +34,7 @@ defmodule Fedex.Crypto do
     KeyPair.new(length, PublicKey.new(length, pub), PrivateKey.new(length, priv))
   end
 
-  def sign_request(private_key_pem, key_id, http_verb, host, path) do
+  def sign_request(private_key_pem, key_id, http_verb, host, path, body) do
     # key = :http_signature_key.decode_pem(private_key_pem)
     # key = %{key | id: key_id}
     # signer = :http_signature_signer.new(key)
@@ -46,10 +46,13 @@ defmodule Fedex.Crypto do
 
     dt = HTTPDate.format(DateTime.utc_now())
 
+    digest = :crypto.hash(:sha256, body) |> Base.encode64()
+
     to_sign = """
     (request-target): #{http_verb} #{path}
     host: #{host}
     date: #{dt}
+    digest: #{digest}
     """
 
     [pem_entry] = :public_key.pem_decode(private_key_pem)
@@ -64,7 +67,7 @@ defmodule Fedex.Crypto do
 
     sig_header =
       """
-      keyId="#{key_id}",headers="(request-target) host date",signature="#{signature}"'
+      keyId="#{key_id}",headers="(request-target) host date digest",signature="#{signature}"
       """
       |> String.trim()
 

@@ -52,7 +52,8 @@ defmodule FedexTest do
       "myKeyId",
       :post,
       "#{host}:#{port}",
-      "/"
+      "/",
+      "mah body"
     )
     |> IO.inspect(label: "signature")
 
