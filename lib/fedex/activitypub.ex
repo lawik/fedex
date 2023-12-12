@@ -15,9 +15,8 @@ defmodule Fedex.Activitypub do
       )
 
     url = Path.join("https://#{host}", path)
-    headers = Map.drop(request.headers, ["(request-target)"])
 
-    IO.inspect(headers, label: "headers")
-    Req.request(method: verb, url: url, headers: headers, body: full_body)
+    IO.inspect(request.headers, label: "headers")
+    Req.request(method: verb, url: url, headers: request.headers, body: full_body)
   end
 end
