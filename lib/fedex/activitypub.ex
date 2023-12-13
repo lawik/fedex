@@ -18,5 +18,12 @@ defmodule Fedex.Activitypub do
     [method: verb, url: url, headers: headers, body: full_body]
   end
 
+  def get("https://" <> actor_id) do
+    with {:ok, %{body: body}} <- Req.get(actor_id),
+         %{"publicKey" => %{"publicKeyPem" => public_key_pem}} <- body do
+      :foo
+    end
+  end
+
   def request(opts), do: Req.request(opts)
 end

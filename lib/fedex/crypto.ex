@@ -44,7 +44,6 @@ defmodule Fedex.Crypto do
               to_sign: nil,
               sig_header: nil,
               signature: nil,
-              headers: nil,
               verified?: false
 
     alias Fedex.Crypto.HttpSigning
@@ -64,12 +63,14 @@ defmodule Fedex.Crypto do
     def digest(%HttpSigning{http_verb: http_verb, path: path, host: host, date: date} = hs, body) do
       digest = :crypto.hash(:sha256, body) |> Base.encode64()
 
-      to_sign = """
-      (request-target): #{http_verb} #{path}
-      host: #{host}
-      date: #{date}
-      digest: sha-256=#{digest}
-      """
+      to_sign =
+        [
+          "(request-target): #{http_verb} #{path}",
+          "host: #{host}",
+          "date: #{date}",
+          "digest: sha-256=#{digest}"
+        ]
+        |> Enum.join("\n")
 
       %HttpSigning{hs | digest: digest, to_sign: to_sign}
     end
@@ -81,7 +82,9 @@ defmodule Fedex.Crypto do
       # _otherPrimeInfos} =
       private_key = :public_key.pem_entry_decode(pem_entry)
 
-      signed = :public_key.sign(to_sign, :sha256, private_key)
+      signed =
+        :public_key.sign(to_sign, :sha256, private_key, [{:rsa_padding, :rsa_pkcs1_padding}])
+
       signature = Base.encode64(signed)
       %HttpSigning{hs | signature: signature}
     end
@@ -113,8 +116,6 @@ defmodule Fedex.Crypto do
         digest: "sha-256=" <> digest,
         signature: sig_header
       ]
-
-      %HttpSigning{hs | sig_header: sig_header, headers: headers}
     end
   end
 
