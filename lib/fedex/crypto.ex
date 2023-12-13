@@ -34,52 +34,88 @@ defmodule Fedex.Crypto do
     KeyPair.new(length, PublicKey.new(length, pub), PrivateKey.new(length, priv))
   end
 
-  def sign_request(private_key_pem, key_id, http_verb, host, path, body) do
-    # key = :http_signature_key.decode_pem(private_key_pem)
-    # key = %{key | id: key_id}
-    # signer = :http_signature_signer.new(key)
+  defmodule HttpSigning do
+    defstruct host: nil,
+              http_verb: nil,
+              path: nil,
+              date: nil,
+              body: nil,
+              digest: nil,
+              to_sign: nil,
+              sig_header: nil,
+              signature: nil,
+              headers: nil,
+              verified?: false
 
-    # :http_signature.sign(signer, http_verb, path, %{
-    #   "(request-target)" => "#{http_verb} #{path}",
-    #   "host" => "#{host}"
-    # })
+    alias Fedex.Crypto.HttpSigning
+    alias Fedex.Crypto.PrivateKey
 
-    dt = HTTPDate.format(DateTime.utc_now())
+    def datetime_now, do: DateTime.utc_now() |> HTTPDate.format()
 
-    digest = :crypto.hash(:sha256, body) |> Base.encode64()
-
-    to_sign = """
-    (request-target): #{http_verb} #{path}
-    host: #{host}
-    date: #{dt}
-    digest: sha-256=#{digest}
-    """
-
-    [pem_entry] = :public_key.pem_decode(private_key_pem)
-
-    {:RSAPrivateKey, _, modulus, _public_exponent, private_exponent, _, _, _exponent1, _, _,
-     _otherPrimeInfos} = private_key = :public_key.pem_entry_decode(pem_entry)
-
-    # IO.inspect(private_key, label: "private key")
-    # signed = :crypto.sign(:rsa, :sha256, to_sign, [private_exponent])
-    signed = :public_key.sign(to_sign, :sha256, private_key)
-    signature = Base.encode64(signed)
-
-    sig_header =
-      """
-      keyId="#{key_id}",headers="(request-target) host date digest",signature="#{signature}"
-      """
-      |> String.trim()
-
-    %{
-      headers: [
+    def new(host, http_verb, path, date) do
+      %HttpSigning{
         host: host,
-        date: dt,
+        http_verb: http_verb,
+        path: path,
+        date: date
+      }
+    end
+
+    def digest(%HttpSigning{http_verb: http_verb, path: path, host: host, date: date} = hs, body) do
+      digest = :crypto.hash(:sha256, body) |> Base.encode64()
+
+      to_sign = """
+      (request-target): #{http_verb} #{path}
+      host: #{host}
+      date: #{date}
+      digest: sha-256=#{digest}
+      """
+
+      %HttpSigning{hs | digest: digest, to_sign: to_sign}
+    end
+
+    def sign(%HttpSigning{to_sign: to_sign} = hs, %PrivateKey{private_key: private_key_pem}) do
+      [pem_entry] = :public_key.pem_decode(private_key_pem)
+
+      # {:RSAPrivateKey, _, _modulus, _public_exponent, _private_exponent, _, _, _exponent1, _, _,
+      # _otherPrimeInfos} =
+      private_key = :public_key.pem_entry_decode(pem_entry)
+
+      signed = :public_key.sign(to_sign, :sha256, private_key)
+      signature = Base.encode64(signed)
+      %HttpSigning{hs | signature: signature}
+    end
+
+    def verify!(%HttpSigning{to_sign: to_sign, signature: signature} = hs, %PublicKey{
+          public_key: public_key_pem
+        }) do
+      [pem_entry] = :public_key.pem_decode(public_key_pem)
+      public_key = :public_key.pem_entry_decode(pem_entry)
+
+      signed = Base.decode64!(signature)
+      true = :public_key.verify(to_sign, :sha256, signed, public_key)
+      %HttpSigning{hs | verified?: true}
+    end
+
+    def to_headers(
+          %HttpSigning{host: host, date: date, digest: digest, signature: signature} = hs,
+          key_id
+        ) do
+      sig_header =
+        """
+        keyId="#{key_id}",headers="(request-target) host date digest",signature="#{signature}"
+        """
+        |> String.trim()
+
+      headers = [
+        host: host,
+        date: date,
         digest: "sha-256=" <> digest,
         signature: sig_header
       ]
-    }
-    |> IO.inspect(label: "ordered headers")
+
+      %HttpSigning{hs | sig_header: sig_header, headers: headers}
+    end
   end
 
   defp generate_rsa_key_pair() do

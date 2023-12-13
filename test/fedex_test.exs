@@ -5,6 +5,7 @@ defmodule FedexTest do
   alias Fedex.Webfinger
   alias Fedex.Webfinger.Entity
   alias Fedex.Doc
+  alias Fedex.Crypto.HttpSigning
 
   test "webfinger server" do
     port = 44444
@@ -47,15 +48,21 @@ defmodule FedexTest do
 
     keypair = Fedex.Crypto.generate_keypair()
 
-    Fedex.Crypto.sign_request(
-      keypair.private.private_key,
-      "myKeyId",
-      :post,
-      "#{host}:#{port}",
-      "/",
-      "mah body"
-    )
-    |> IO.inspect(label: "signature")
+    headers =
+      HttpSigning.new(host, :post, "/", HttpSigning.datetime_now())
+      |> HttpSigning.digest("mah body")
+      |> HttpSigning.sign(keypair.private)
+      |> HttpSigning.verify!(keypair.public)
+      |> HttpSigning.to_headers("myKeyId")
+      # Fedex.Crypto.sign_request(
+      #   keypair.private.private_key,
+      #   "myKeyId",
+      #   :post,
+      #   "#{host}:#{port}",
+      #   "/",
+      #   "mah body"
+      # )
+      |> IO.inspect(label: "signature")
 
     actor =
       Fedex.Activitystreams.actor(
