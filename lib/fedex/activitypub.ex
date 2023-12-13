@@ -18,10 +18,13 @@ defmodule Fedex.Activitypub do
     [method: verb, url: url, headers: headers, body: full_body]
   end
 
-  def get("https://" <> actor_id) do
-    with {:ok, %{body: body}} <- Req.get(actor_id),
-         %{"publicKey" => %{"publicKeyPem" => public_key_pem}} <- body do
-      :foo
+  def get_actor_public_key("https://" <> key_id) do
+    # Remove fragment if it matters
+    [url | []] = String.split(key_id, "#")
+
+    with {:ok, %{body: body}} <- Req.get(url),
+         %{"publicKey" => %{"id" => ^key_id, "publicKeyPem" => public_key_pem}} <- body do
+      {:ok, public_key_pem}
     end
   end
 

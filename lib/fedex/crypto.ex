@@ -61,16 +61,9 @@ defmodule Fedex.Crypto do
     end
 
     def digest(%HttpSigning{http_verb: http_verb, path: path, host: host, date: date} = hs, body) do
-      digest = :crypto.hash(:sha256, body) |> Base.encode64()
+      digest = Fedex.Crypto.digest(body)
 
-      to_sign =
-        [
-          "(request-target): #{http_verb} #{path}",
-          "host: #{host}",
-          "date: #{date}",
-          "digest: sha-256=#{digest}"
-        ]
-        |> Enum.join("\n")
+      to_sign = Fedex.Crypto.build_to_sign(http_verb, path, host, date, digest)
 
       %HttpSigning{hs | digest: digest, to_sign: to_sign}
     end
@@ -110,7 +103,7 @@ defmodule Fedex.Crypto do
         """
         |> String.trim()
 
-      headers = [
+      [
         host: host,
         date: date,
         digest: "sha-256=" <> digest,
@@ -134,5 +127,27 @@ defmodule Fedex.Crypto do
       |> :public_key.pem_encode()
 
     {private_key, public_key}
+  end
+
+  def digest(text) do
+    :crypto.hash(:sha256, text) |> Base.encode64()
+  end
+
+  def build_to_sign(http_verb, path, host, date, digest) do
+    [
+      "(request-target): #{http_verb} #{path}",
+      "host: #{host}",
+      "date: #{date}",
+      "digest: sha-256=#{digest}"
+    ]
+    |> Enum.join("\n")
+  end
+
+  def signature_valid?(msg, signature, public_key_pem) do
+    [pem_entry] = :public_key.pem_decode(public_key_pem)
+    public_key = :public_key.pem_entry_decode(pem_entry)
+
+    signed = Base.decode64!(signature)
+    :public_key.verify(msg, :sha256, signed, public_key)
   end
 end

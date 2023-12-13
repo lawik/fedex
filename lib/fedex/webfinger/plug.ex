@@ -11,6 +11,7 @@ defmodule Fedex.Webfinger.Plug do
         case fetch_entity.(subject) do
           nil ->
             Conn.send_resp(conn, 404, "Not found")
+            |> Conn.halt()
 
           entity when is_binary(entity) ->
             conn
@@ -19,10 +20,12 @@ defmodule Fedex.Webfinger.Plug do
               200,
               entity
             )
+            |> Conn.halt()
         end
 
       _ ->
         Conn.send_resp(conn, 404, "Not found")
+        |> Conn.halt()
     end
   end
 
