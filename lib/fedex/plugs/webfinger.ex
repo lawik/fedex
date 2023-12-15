@@ -1,4 +1,4 @@
-defmodule Fedex.Webfinger.Plug do
+defmodule Fedex.Plugs.Webfinger do
   alias Plug.Conn
   def init(options), do: options
 

@@ -36,6 +36,7 @@ defmodule Fedex.Crypto do
 
   defmodule HttpSigning do
     defstruct host: nil,
+              port: nil,
               http_verb: nil,
               path: nil,
               date: nil,
@@ -51,19 +52,23 @@ defmodule Fedex.Crypto do
 
     def datetime_now, do: DateTime.utc_now() |> HTTPDate.format()
 
-    def new(host, http_verb, path, date) do
+    def new(host, port, http_verb, path, date) do
       %HttpSigning{
         host: host,
+        port: port,
         http_verb: http_verb,
         path: path,
         date: date
       }
     end
 
-    def digest(%HttpSigning{http_verb: http_verb, path: path, host: host, date: date} = hs, body) do
+    def digest(
+          %HttpSigning{http_verb: http_verb, path: path, host: host, port: port, date: date} = hs,
+          body
+        ) do
       digest = Fedex.Crypto.digest(body)
 
-      to_sign = Fedex.Crypto.build_to_sign(http_verb, path, host, date, digest)
+      to_sign = Fedex.Crypto.build_to_sign(http_verb, path, host, port, date, digest)
 
       %HttpSigning{hs | digest: digest, to_sign: to_sign}
     end
@@ -94,7 +99,8 @@ defmodule Fedex.Crypto do
     end
 
     def to_headers(
-          %HttpSigning{host: host, date: date, digest: digest, signature: signature} = hs,
+          %HttpSigning{host: host, port: port, date: date, digest: digest, signature: signature} =
+            hs,
           key_id
         ) do
       sig_header =
@@ -104,7 +110,7 @@ defmodule Fedex.Crypto do
         |> String.trim()
 
       [
-        host: host,
+        host: "#{host}:#{port}",
         date: date,
         digest: "sha-256=" <> digest,
         signature: sig_header
@@ -133,10 +139,10 @@ defmodule Fedex.Crypto do
     :crypto.hash(:sha256, text) |> Base.encode64()
   end
 
-  def build_to_sign(http_verb, path, host, date, digest) do
+  def build_to_sign(http_verb, path, host, port, date, digest) do
     [
       "(request-target): #{http_verb} #{path}",
-      "host: #{host}",
+      "host: #{host}:#{port}",
       "date: #{date}",
       "digest: sha-256=#{digest}"
     ]

@@ -1,4 +1,4 @@
-defmodule Fedex.Activitystreams.Plug do
+defmodule Fedex.Plugs.Activitystreams do
   alias Plug.Conn
 
   require Logger

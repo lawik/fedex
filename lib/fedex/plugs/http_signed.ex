@@ -1,4 +1,4 @@
-defmodule Fedex.Activitypub.HttpSigned do
+defmodule Fedex.Plugs.HttpSigned do
   alias Plug.Conn
 
   alias Fedex.Activitypub
@@ -9,10 +9,10 @@ defmodule Fedex.Activitypub.HttpSigned do
   def init(options), do: options
 
   @spec call(Plug.Conn.t(), any()) :: Plug.Conn.t()
-  def call(%Conn{} = conn, _options) do
+  def call(%Conn{} = conn, options) do
     with {:ok, sig} <- unpack_signature_header(conn),
          {:ok, signed_header_keys} <- get_signed_header_keys(sig),
-         :ok <- verify_digest_for_post(conn, signed_header_keys),
+         :ok <- verify_digest_for_post(conn, signed_header_keys, options),
          {:ok, headers_with_request_target} <- moar_headers(conn, signed_header_keys),
          {:ok, header_string_to_sign} <-
            build_header_string_to_sign(headers_with_request_target, signed_header_keys),
@@ -44,33 +44,38 @@ defmodule Fedex.Activitypub.HttpSigned do
 
   def verify_digest_for_post(
         %Conn{method: "POST", req_headers: headers} = conn,
-        signed_header_keys
+        signed_header_keys,
+        opts
       ) do
-    case conn.assigns[:raw_body] do
-      nil ->
-        {:your_fault,
-         "Missing raw_body in conn.assigns. Have you configured Plug.Parsers to use the alternate body reader: body_reader: {Fedex.Activitypub.HttpSigned, :read_body, []}"}
+    conn =
+      if is_nil(conn.assigns[:raw_body]) do
+        {:ok, _body, conn} = alt_read_body(conn, opts)
+        # Raw body should exist now
+        conn
+      else
+        conn
+      end
 
-      body ->
-        if "digest" in signed_header_keys do
-          case header(headers, "digest") do
-            nil ->
-              {:bad_request, "Must send a digest header with the request."}
+    body = conn.assigns[:raw_body] |> IO.iodata_to_binary()
 
-            "sha-256" <> digest ->
-              if Crypto.digest(body) == digest do
-                :ok
-              else
-                {:bad_request, "Digest header and SHA-256 of body did not match."}
-              end
+    if "digest" in signed_header_keys do
+      case header(headers, "digest") do
+        nil ->
+          {:bad_request, "Must send a digest header with the request."}
 
-            _other ->
-              {:bad_request, "Digest header is not tagged as SHA-256."}
+        "sha-256=" <> digest ->
+          new_digest = Crypto.digest(body)
+          if new_digest == digest do
+            :ok
+          else
+            {:bad_request, "Digest header and SHA-256 of body did not match.\n#{digest} from header\n#{new_digest} from body"}
           end
-        else
-          {:bad_request,
-           "Must have digest header in referenced in signature header's headers key."}
-        end
+
+        _other ->
+          {:bad_request, "Digest header is not tagged as SHA-256."}
+      end
+    else
+      {:bad_request, "Must have digest header in referenced in signature header's headers key."}
     end
   end
 
@@ -84,7 +89,7 @@ defmodule Fedex.Activitypub.HttpSigned do
     path =
       case path_info do
         [] -> "/"
-        parts -> Path.join(["/" | path_info])
+        parts -> Path.join(["/" | parts])
       end
 
     minor_method = String.downcase(method)
@@ -101,7 +106,7 @@ defmodule Fedex.Activitypub.HttpSigned do
     to_sign =
       signed_key_headers
       |> Enum.map(fn key ->
-        "#{key}: #{header(headers, key)}}"
+        "#{key}: #{header(headers, key)}"
       end)
       |> Enum.join("\n")
 

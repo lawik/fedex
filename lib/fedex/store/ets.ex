@@ -1,4 +1,4 @@
-defmodule Fedex.Doc do
+defmodule Fedex.Store.ETS do
   use GenServer
 
   @moduledoc """
