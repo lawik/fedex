@@ -1,5 +1,4 @@
 defmodule Fedex.Activitypub do
-  alias Fedex.Crypto
   alias Fedex.Crypto.HttpSigning
 
   def request_by_actor(actor, keypair, verb, host, path, body) do

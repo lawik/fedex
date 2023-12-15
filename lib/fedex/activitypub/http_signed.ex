@@ -9,7 +9,7 @@ defmodule Fedex.Activitypub.HttpSigned do
   def init(options), do: options
 
   @spec call(Plug.Conn.t(), any()) :: Plug.Conn.t()
-  def call(%Conn{} = conn, options) do
+  def call(%Conn{} = conn, _options) do
     with {:ok, sig} <- unpack_signature_header(conn),
          {:ok, signed_header_keys} <- get_signed_header_keys(sig),
          :ok <- verify_digest_for_post(conn, signed_header_keys),
