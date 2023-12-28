@@ -26,9 +26,6 @@ defmodule Fedex.MixProject do
       {:json_ld, "~> 0.3.7"},
       {:plug, "~> 1.0"},
       {:http_date, "~> 0.1.0"},
-      # {:http_signature, "~> 2.0"},
-      # {:http_signature, path: "../erlang-http_signature"},
-      {:http_signature, github: "lawik/erlang-http_signature", ref: "fix-otp-26"},
       {:bandit, "~> 1.1", only: :test}
     ]
   end

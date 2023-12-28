@@ -1,4 +1,4 @@
-defmodule FedexTest do
+defmodule Fedex.FedexTest do
   use ExUnit.Case
   doctest Fedex
 
