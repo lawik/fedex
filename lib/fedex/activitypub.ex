@@ -23,11 +23,17 @@ defmodule Fedex.Activitypub do
           {"https", ""}
 
         # Plain http is not actually allowed
-        other ->
+        _other ->
           {@env_proto, ":#{port}"}
       end
 
     url = Path.join("#{protocol}://#{host}#{port_part}", path)
+
+    other_headers = [
+      {"content-type", "application/activity+json"}
+    ]
+
+    headers = headers ++ other_headers
 
     [method: verb, url: url, headers: headers, body: full_body]
   end

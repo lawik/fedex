@@ -129,7 +129,13 @@ defmodule FedexTest do
     use Plug.Builder
     plug(Fedex.Plugs.Webfinger, fetch: &DocFetch.fetcher_1/1)
     plug(Fedex.Plugs.Activitystreams, fetch: &DocFetch.fetcher_1/1)
+    plug(Plug.Parsers,
+      parsers: [:json],
+      json_decoder: Jason,
+      body_reader: {Fedex.Plugs.HttpSigned, :alt_read_body, []}
+    )
     plug(Fedex.Plugs.HttpSigned)
+    plug(Fedex.Plugs.Inbox)
     plug(BasicInbox)
   end
 
@@ -137,7 +143,13 @@ defmodule FedexTest do
     use Plug.Builder
     plug(Fedex.Plugs.Webfinger, fetch: &DocFetch.fetcher_2/1)
     plug(Fedex.Plugs.Activitystreams, fetch: &DocFetch.fetcher_2/1)
+    plug(Plug.Parsers,
+      parsers: [:json],
+      json_decoder: Jason,
+      body_reader: {Fedex.Plugs.HttpSigned, :alt_read_body, []}
+    )
     plug(Fedex.Plugs.HttpSigned)
+    plug(Fedex.Plugs.Inbox)
     plug(BasicInbox)
   end
 
@@ -214,14 +226,17 @@ defmodule FedexTest do
     create_1 =
       Activitystreams.new(url_1, "create-#{obj_id_1}", "Create", actor_1.id, note_object_1)
 
+    IO.inspect(create_1, label: "pre-encoded body")
     request_1 =
       Activitypub.request_by_actor(actor_1, keypair_1, :post, host_2, port_2, "/inbox", create_1)
 
     IO.inspect(request_1, label: "request 1")
     assert {:ok, %{status: status, body: body}} = Activitypub.request(request_1)
     unless status < 300 do
-      IO.puts(body)
+      IO.inspect(body, label: "request failed")
     end
+    IO.inspect(status, label: "status")
+    IO.inspect(body, label: "body")
     assert status < 300
     assert "Got it" = body
   end

@@ -50,6 +50,51 @@ defmodule Fedex.Activitystreams do
     }
   end
 
+  def new_follow_object(
+    host,
+    id,
+    actor,
+    object
+  ) do
+    %{
+      id: Path.join(host, id),
+      type: "Follow",
+      actor: actor,
+      object: object
+    }
+    |> at_context([@activitystreams_context])
+  end
+
+  def new_accept_object(
+    host,
+    id,
+    actor,
+    object
+  ) do
+    %{
+      id: Path.join(host, id),
+      type: "Accept",
+      actor: actor,
+      object: object
+    }
+    |> at_context([@activitystreams_context])
+  end
+
+  def new_reject_object(
+    host,
+    id,
+    actor,
+    object
+  ) do
+    %{
+      id: Path.join(host, id),
+      type: "Reject",
+      actor: actor,
+      object: object
+    }
+    |> at_context([@activitystreams_context])
+  end
+
   def to_public(), do: @activitystreams_public
 
   defp at_context(thing, value) do
