@@ -16,8 +16,6 @@ defmodule Fedex.Store.ETS do
   end
 
   def get(name, key) do
-    IO.inspect(key, label: "getting in #{name}")
-
     case :ets.lookup(name, key) do
       [{_key, item}] -> item
       [] -> nil
@@ -25,7 +23,6 @@ defmodule Fedex.Store.ETS do
   end
 
   def set(name, key, value) do
-    IO.inspect(key, label: "setting in #{name}")
     GenServer.call(name, {:set, key, value})
   end
 

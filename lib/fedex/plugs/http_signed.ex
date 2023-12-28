@@ -65,10 +65,12 @@ defmodule Fedex.Plugs.HttpSigned do
 
         "sha-256=" <> digest ->
           new_digest = Crypto.digest(body)
+
           if new_digest == digest do
             :ok
           else
-            {:bad_request, "Digest header and SHA-256 of body did not match.\n#{digest} from header\n#{new_digest} from body"}
+            {:bad_request,
+             "Digest header and SHA-256 of body did not match.\n#{digest} from header\n#{new_digest} from body"}
           end
 
         _other ->

@@ -51,11 +51,11 @@ defmodule Fedex.Activitystreams do
   end
 
   def new_follow_object(
-    host,
-    id,
-    actor,
-    object
-  ) do
+        host,
+        id,
+        actor,
+        object
+      ) do
     %{
       id: Path.join(host, id),
       type: "Follow",
@@ -66,11 +66,11 @@ defmodule Fedex.Activitystreams do
   end
 
   def new_accept_object(
-    host,
-    id,
-    actor,
-    object
-  ) do
+        host,
+        id,
+        actor,
+        object
+      ) do
     %{
       id: Path.join(host, id),
       type: "Accept",
@@ -81,11 +81,11 @@ defmodule Fedex.Activitystreams do
   end
 
   def new_reject_object(
-    host,
-    id,
-    actor,
-    object
-  ) do
+        host,
+        id,
+        actor,
+        object
+      ) do
     %{
       id: Path.join(host, id),
       type: "Reject",
