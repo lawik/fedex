@@ -1,5 +1,6 @@
 defmodule Fedex.Activitypub do
   alias Fedex.Crypto.HttpSigning
+  alias Fedex.Activitypub.Actor
 
   @env_proto (if Mix.env() == :test do
                 "http"
@@ -36,6 +37,17 @@ defmodule Fedex.Activitypub do
     headers = headers ++ other_headers
 
     [method: verb, url: url, headers: headers, body: full_body]
+  end
+
+  def get_actor(id) do
+    case Req.get(id) do
+      {:ok, %{status: 200, body: body}} ->
+        Actor.from_response_body(body)
+      {:ok, %{status: status, body: body}} ->
+        {:error, {:request_failed, %{status: status, body: body}}}
+      {:error, reason} ->
+        {:error, {:request_error, reason}}
+      end
   end
 
   def get_actor_public_key(key_id) do
