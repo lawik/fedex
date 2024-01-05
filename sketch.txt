@@ -1,0 +1,12 @@
+How do I want to work with these?
+
+host = Host.local("u7d.io")
+
+actor = Actor.person(host, "lawik")
+
+target_actor = Actor.from_id("@lawik@fosstodon.org")
+
+note =
+    Note.new(actor, "This is my note", to: [Addressing.public(), Addressing.followers_of(actor)])
+
+activity = Activity.create(actor, note, to: [Addressing.public(), Addressing.followers_of(actor)])
